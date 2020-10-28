@@ -46,6 +46,8 @@ COPY --from=builder /usr/local/nginx/modules/ngx_rtmp_module.so /usr/local/nginx
 #RUN rm /etc/nginx/conf.d/default.conf
 
 COPY ./index.html /usr/share/nginx/html
+COPY ./stream.html /mnt
+COPY ./small_bunny_1080p_30fps.mp4 /
 COPY nginx.conf /etc/nginx/nginx.conf
 EXPOSE 1935
 STOPSIGNAL SIGTERM
