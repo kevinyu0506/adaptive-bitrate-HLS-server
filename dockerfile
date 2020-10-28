@@ -47,7 +47,7 @@ COPY --from=builder /usr/local/nginx/modules/ngx_rtmp_module.so /usr/local/nginx
 
 COPY ./index.html /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
-EXPOSE 80
+EXPOSE 1935
 STOPSIGNAL SIGTERM
 #CMD ["nginx", "-g", "daemon off;"]
 RUN nginx -t
