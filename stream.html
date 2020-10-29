@@ -3,15 +3,42 @@
     <head>
         <meta charset="UTF-8">
         <title>Live Streaming</title>
-        <link href="//vjs.zencdn.net/5.8/video-js.min.css" rel="stylesheet">
-        <script src="//vjs.zencdn.net/5.8/video.min.js"></script>
     </head>
     <body>
-        <video id="player" class="video-js vjs-default-skin" height="360" width="640" controls preload="none">
-            <source src="http://localhost:8080/hls/stream.m3u8" type="application/x-mpegURL" />
-        </video>
-    <script>
-        var player = videojs('#player');
-    </script>
+        <video id="video" controls muted="muted" autoplay="true" style="position: absolute; width: 640px; height: 360px;"></video>
     </body>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@0.14.13/dist/hls.min.js"></script>
+    <!-- Or if you want a more recent alpha version -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/hls.js@alpha"></script> -->
+    <script>
+        var video = document.getElementById('video');
+        var videoSrc = 'http://localhost:8080/hls/stream.m3u8';
+        if (Hls.isSupported()) {
+            var hls = new Hls();
+            hls.loadSource(videoSrc);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                video.play();                            
+            });
+        }
+        // hls.js is not supported on platforms that do not have Media Source
+        // Extensions (MSE) enabled.
+        //
+        // When the browser has built-in HLS support (check using `canPlayType`),
+        // we can provide an HLS manifest (i.e. .m3u8 URL) directly to the video
+        // element through the `src` property. This is using the built-in support
+        // of the plain video element, without using hls.js.
+        //
+        // Note: it would be more normal to wait on the 'canplay' event below however
+        // on Safari (where you are most likely to find built-in HLS support) the
+        // video.src URL must be on the user-driven white-list before a 'canplay'
+        // event will be emitted; the last video event that can be reliably
+        // listened-for when the URL is not on the white-list is 'loadedmetadata'.
+        else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = videoSrc;
+            video.addEventListener('loadedmetadata', function() {
+                video.play();
+            });
+        }
+    </script>
 </html>
