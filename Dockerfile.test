@@ -1,0 +1,37 @@
+FROM nginx:alpine AS builder
+
+ENV NGINX_RTMP_MODULE_VERSION 1.2.1
+ENV NGINX_RTMP_PATH /nginx-rtmp-module-$NGINX_RTMP_MODULE_VERSION
+ENV NGINX_TAR_NAME nginx.tar.gz
+ENV NGINX_RTMP_TAR_NAME nginx_rtmp.tar.gz
+
+
+RUN wget "http://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz" -O $NGINX_TAR_NAME && \
+    wget "https://github.com/arut/nginx-rtmp-module/archive/v${NGINX_RTMP_MODULE_VERSION}.tar.gz" -O $NGINX_RTMP_TAR_NAME
+
+RUN apk add --no-cache --virtual .build-deps gcc libc-dev make openssl-dev pcre-dev zlib-dev linux-headers curl gnupg libxslt-dev gd-dev geoip-dev && \
+    mkdir /usr/src && \
+    tar -zxC /usr/src -f $NGINX_TAR_NAME && \
+    tar -xzvf $NGINX_RTMP_TAR_NAME
+
+WORKDIR /usr/src/nginx-$NGINX_VERSION
+
+RUN CONFARGS=$(nginx -V 2>&1 | sed -n -e 's/^.*arguments: //p') && \
+    ./configure --with-compat $CONFARGS --add-dynamic-module=$NGINX_RTMP_PATH --with-cc-opt="-Wimplicit-fallthrough=0" && \
+    make && \
+    make install
+
+FROM nginx:alpine
+
+ENV NGINX_RTMP_MODULE_VERSION 1.2.1
+ENV NGINX_RTMP_PATH /nginx-rtmp-module-$NGINX_RTMP_MODULE_VERSION
+
+COPY --from=builder /usr/local/nginx/modules/ngx_rtmp_module.so /usr/local/nginx/modules/
+COPY --from=builder /$NGINX_RTMP_PATH/stat.xsl /usr/src/nginx-rtmp-module/
+
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY index.html /usr/share/nginx/html
+COPY stream.html /mnt
+
+EXPOSE 1935
+RUN nginx -t
