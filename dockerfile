@@ -56,12 +56,12 @@ RUN ln -sf /dev/stdout /var/log/nginx/access.log && \
     ln -sf /dev/stderr /var/log/nginx/error.log
 
 # Set up config file
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY /etc/nginx/nginx.conf /etc/nginx/nginx.conf
 
-COPY stream.html /usr/local/nginx/html
-COPY vod.html /usr/local/nginx/html
+COPY /app/www/stream.html /usr/local/nginx/html
+COPY /app/www/vod.html /usr/local/nginx/html
 
-COPY bunny.mp4 /opt/video/vod/
+COPY /app/static/bunny.mp4 /opt/video/vod/
 
 EXPOSE 1935 80
 CMD ["nginx", "-g", "daemon off;"]
