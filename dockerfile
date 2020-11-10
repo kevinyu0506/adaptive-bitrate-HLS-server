@@ -1,5 +1,6 @@
 FROM buildpack-deps:stretch AS builder
 
+MAINTAINER Kevin Yu <kevinyu05062006@gmail.com> 
 # Versions of Nginx and nginx-rtmp-module to use
 ENV NGINX_VERSION nginx-1.18.0
 ENV NGINX_RTMP_MODULE_VERSION 1.2.1
@@ -54,7 +55,7 @@ RUN apt-get update && \
 COPY /etc/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY /app/www/stream.html /usr/local/nginx/html
 COPY /app/www/vod.html /usr/local/nginx/html
-COPY /app/static/bunny.mp4 /opt/video/vod/
+COPY /test/static/bunny.mp4 /opt/video/vod/
 
 EXPOSE 1935 80
 CMD ["nginx", "-g", "daemon off;"]
