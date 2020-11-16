@@ -1,7 +1,6 @@
 # NM7623 Video Compression Technique, standards and implementation
 
-[NM7623 Video Compression Technique, standards and implementation](https://nol.ntu.edu.tw/nol/coursesearch/print_table.php?
-course_id=944%20U0020&class=&dpt_code=9440&ser_no=79602&semester=109-1) final project.
+[NM7623 Video Compression Technique, standards and implementation](https://nol.ntu.edu.tw/nol/coursesearch/print_table.php?course_id=944%20U0020&class=&dpt_code=9440&ser_no=79602&semester=109-1) final project.
 
 ## About the project
 
