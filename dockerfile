@@ -52,10 +52,9 @@ RUN apt-get update && \
 #COPY --from=builder /usr/local/nginx/html/stat.xsl /usr/local/nginx/html/
 
 # Set up config file
-COPY /etc/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY /nginx/nginx.conf /etc/nginx/nginx.conf
 COPY /app/www/stream.html /usr/local/nginx/html
 COPY /app/www/vod.html /usr/local/nginx/html
-COPY /test/static/bunny.mp4 /opt/video/vod/
 
 EXPOSE 1935 80
 CMD ["nginx", "-g", "daemon off;"]
