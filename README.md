@@ -4,7 +4,7 @@
 
 ## About the project
 
-This is a dockerize RTMP server with Nginx as a reverse proxy. 
+This is a containerize RTMP server with Nginx as a reverse proxy. 
 
 ## Getting Started
 
@@ -19,14 +19,19 @@ These instruction will get you a copy of the project up and running on your loca
 Build an image called `nginx-rtmp`, and check if that succeed.
 ```
 $ docker build -t nginx-rtmp .
-$ docker images
 ```
 
 Create a running container base on the previous image we've just created.
 ```
-$ docker run --rm -p 8080:80 -p 1935:1935 -d nginx-rtmp
-$ docker ps -a
+$ docker run --rm --name nginx-rtmp -v $(pwd)/mount:/mount -p 8080:80 -p 1935:1935 -d nginx-rtmp
 ```
+
+Or simpy just run the short-cut shell script below
+```
+$ cd script
+$ sh run.sh
+```
+
 Now open up your browser (http://localhost:8080) and you should see the Nginx's welcoming page.
 
 ### Test
