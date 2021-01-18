@@ -2,60 +2,182 @@ FROM buildpack-deps:stretch AS builder
 
 MAINTAINER Kevin Yu <kevinyu05062006@gmail.com> 
 # Versions of Nginx and nginx-rtmp-module to use
-ENV NGINX_VERSION nginx-1.18.0
-ENV NGINX_RTMP_MODULE_VERSION 1.2.1
+ARG NGINX_VERSION=1.18.0
+ARG NGINX_RTMP_VERSION=1.2.1
+ARG FFMPEG_VERSION=4.3.1
 
-# Install dependencies
-RUN apt-get update && \
-    apt-get install -y ca-certificates openssl libssl-dev && \
-    rm -rf /var/lib/apt/lists/* && \
-# Download and decompress Nginx
-    mkdir -p /tmp/build/nginx && \
-    cd /tmp/build/nginx && \
-    wget -O ${NGINX_VERSION}.tar.gz https://nginx.org/download/${NGINX_VERSION}.tar.gz && \
-    tar -zxf ${NGINX_VERSION}.tar.gz && \
-# Download and decompress RTMP module
-    mkdir -p /tmp/build/nginx-rtmp-module && \
-    cd /tmp/build/nginx-rtmp-module && \
-    wget -O nginx-rtmp-module-${NGINX_RTMP_MODULE_VERSION}.tar.gz https://github.com/arut/nginx-rtmp-module/archive/v${NGINX_RTMP_MODULE_VERSION}.tar.gz && \
-    tar -zxf nginx-rtmp-module-${NGINX_RTMP_MODULE_VERSION}.tar.gz && \
-    cd nginx-rtmp-module-${NGINX_RTMP_MODULE_VERSION} && \
-# Build and install Nginx
-# The default puts everything under /usr/local/nginx, so it's needed to change
-# it explicitly. Not just for order but to have it in the PATH
-    cd /tmp/build/nginx/${NGINX_VERSION} && \
-    ./configure \
-        --sbin-path=/usr/local/sbin/nginx \
-        --conf-path=/etc/nginx/nginx.conf \
-        --error-log-path=/var/log/nginx/error.log \
-        --pid-path=/var/run/nginx/nginx.pid \
-        --lock-path=/var/lock/nginx/nginx.lock \
-        --http-log-path=/var/log/nginx/access.log \
-        --http-client-body-temp-path=/tmp/nginx-client-body \
-        --with-http_ssl_module \
-        --with-threads \
-        --with-ipv6 \
-        --add-dynamic-module=/tmp/build/nginx-rtmp-module/nginx-rtmp-module-${NGINX_RTMP_MODULE_VERSION} && \
-    make -j $(getconf _NPROCESSORS_ONLN) && \
-    make install && \
-    mv /usr/local/nginx/modules/ngx_rtmp_module.so / && \
-    mv /tmp/build/nginx-rtmp-module/nginx-rtmp-module-${NGINX_RTMP_MODULE_VERSION}/stat.xsl /usr/local/nginx/html/ && \
-    rm -rf /tmp/build && \
-# Forward logs to Docker
-    ln -sf /dev/stdout /var/log/nginx/access.log && \
-    ln -sf /dev/stderr /var/log/nginx/error.log
 
-#FROM nginx:1.18.0-alpine
-#
-#COPY --from=builder /ngx_rtmp_module.so /usr/local/nginx/modules/
-#COPY --from=builder /usr/local/nginx/html/index.html /usr/local/nginx/html/
-#COPY --from=builder /usr/local/nginx/html/stat.xsl /usr/local/nginx/html/
+##############################
+# Build the NGINX-build image.
+FROM alpine:3.11 as nginx-builder
+ARG NGINX_VERSION
+ARG NGINX_RTMP_VERSION
+
+# Build dependencies.
+RUN apk add --update \
+  build-base \
+  ca-certificates \
+  curl \
+  gcc \
+  libc-dev \
+  libgcc \
+  linux-headers \
+  make \
+  musl-dev \
+  openssl \
+  openssl-dev \
+  pcre \
+  pcre-dev \
+  pkgconf \
+  pkgconfig \
+  zlib-dev
+
+# Get nginx source.
+RUN cd /tmp && \
+  wget https://nginx.org/download/nginx-1.18.0.tar.gz && \
+  tar zxf nginx-1.18.0.tar.gz && \
+  rm nginx-1.18.0.tar.gz
+#RUN cd /tmp && \
+#  wget https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz && \
+#  tar zxf nginx-${NGINX_VERSION}.tar.gz && \
+#  rm nginx-${NGINX_VERSION}.tar.gz
+
+# Get nginx-rtmp module.
+RUN cd /tmp && \
+  wget https://github.com/arut/nginx-rtmp-module/archive/v1.2.1.tar.gz && \
+  tar zxf v1.2.1.tar.gz && rm v1.2.1.tar.gz
+#RUN cd /tmp && \
+#  wget https://github.com/arut/nginx-rtmp-module/archive/v${NGINX_RTMP_VERSION}.tar.gz && \
+#  tar zxf v${NGINX_RTMP_VERSION}.tar.gz && rm v${NGINX_RTMP_VERSION}.tar.gz
+
+# Compile nginx with nginx-rtmp module.
+RUN cd /tmp/nginx-1.18.0 && \
+  ./configure \
+  --prefix=/usr/local/nginx \
+  --add-module=/tmp/nginx-rtmp-module-1.2.1 \
+  --conf-path=/etc/nginx/nginx.conf \
+  --with-threads \
+  --with-file-aio \
+  --with-http_ssl_module \
+  --with-debug \
+  --with-cc-opt="-Wimplicit-fallthrough=0" && \
+  cd /tmp/nginx-1.18.0 && make && make install
+
+###############################
+# Build the FFmpeg-build image.
+FROM alpine:3.11 as ffmpeg-builder
+ARG FFMPEG_VERSION
+ARG PREFIX=/usr/local
+ARG MAKEFLAGS="-j4"
+
+# FFmpeg build dependencies.
+RUN apk add --update \
+  build-base \
+  coreutils \
+  freetype-dev \
+  lame-dev \
+  libogg-dev \
+  libass \
+  libass-dev \
+  libvpx-dev \
+  libvorbis-dev \
+  libwebp-dev \
+  libtheora-dev \
+  openssl-dev \
+  opus-dev \
+  pkgconf \
+  pkgconfig \
+  rtmpdump-dev \
+  wget \
+  x264-dev \
+  x265-dev \
+  yasm
+
+RUN echo http://dl-cdn.alpinelinux.org/alpine/edge/community >> /etc/apk/repositories
+RUN apk add --update fdk-aac-dev
+
+# Get FFmpeg source.
+RUN cd /tmp/ && \
+  wget http://ffmpeg.org/releases/ffmpeg-4.3.1.tar.gz && \
+  tar zxf ffmpeg-4.3.1.tar.gz && rm ffmpeg-4.3.1.tar.gz
+
+# Compile ffmpeg.
+RUN cd /tmp/ffmpeg-4.3.1 && \
+  ./configure \
+  --prefix=${PREFIX} \
+  --enable-version3 \
+  --enable-gpl \
+  --enable-nonfree \
+  --enable-small \
+  --enable-libmp3lame \
+  --enable-libx264 \
+  --enable-libx265 \
+  --enable-libvpx \
+  --enable-libtheora \
+  --enable-libvorbis \
+  --enable-libopus \
+  --enable-libfdk-aac \
+  --enable-libass \
+  --enable-libwebp \
+  --enable-postproc \
+  --enable-avresample \
+  --enable-libfreetype \
+  --enable-openssl \
+  --disable-debug \
+  --disable-doc \
+  --disable-ffplay \
+  --extra-libs="-lpthread -lm" && \
+  make && make install && make distclean
+
+# Cleanup.
+RUN rm -rf /var/cache/* /tmp/*
+
+##########################
+# Build the release image.
+FROM alpine:3.11
+
+# Set default ports.
+ENV HTTP_PORT 80
+ENV HTTPS_PORT 443
+ENV RTMP_PORT 1935
+
+RUN apk add --update \
+  ca-certificates \
+  gettext \
+  openssl \
+  pcre \
+  lame \
+  libogg \
+  curl \
+  libass \
+  libvpx \
+  libvorbis \
+  libwebp \
+  libtheora \
+  opus \
+  rtmpdump \
+  x264-dev \
+  x265-dev
+
+COPY --from=nginx-builder /usr/local/nginx /usr/local/nginx
+COPY --from=nginx-builder /etc/nginx /etc/nginx
+COPY --from=ffmpeg-builder /usr/local /usr/local
+COPY --from=ffmpeg-builder /usr/lib/libfdk-aac.so.2 /usr/lib/libfdk-aac.so.2
+
+# Add NGINX path, config and static files.
+ENV PATH "${PATH}:/usr/local/nginx/sbin"
+ADD nginx/nginx.conf /etc/nginx/nginx.conf.template
+RUN mkdir -p /opt/data && mkdir /www
+ADD static /www/static
 
 # Set up config file
-COPY /nginx/nginx.conf /etc/nginx/nginx.conf
+#COPY /nginx/nginx.conf /etc/nginx/nginx.conf
 COPY /app/www/stream.html /usr/local/nginx/html
 COPY /app/www/vod.html /usr/local/nginx/html
 
-EXPOSE 1935 80
-CMD ["nginx", "-g", "daemon off;"]
+#EXPOSE 1935 80
+#CMD ["nginx", "-g", "daemon off;"]
 
+CMD envsubst "$(env | sed -e 's/=.*//' -e 's/^/\$/g')" < \
+  /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf && \
+  nginx
