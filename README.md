@@ -1,10 +1,12 @@
-# NM7623 Video Compression Technique, standards and implementation
+# Adaptive bitrate HTTP Live Streaming (HLS) server
 
 [NM7623 Video Compression Technique, standards and implementation](https://nol.ntu.edu.tw/nol/coursesearch/print_table.php?course_id=944%20U0020&class=&dpt_code=9440&ser_no=79602&semester=109-1) final project.
 
 ## About the project
 
-This is a containerize RTMP server with Nginx as a reverse proxy. 
+This is a containerize streaming server with Nginx as a reverse proxy.
+
+![nginx-rtmp](https://github.com/kevinyu0506/NM7623/blob/master/img/nginx-rtmp.png?raw=true)
 
 ## Getting Started
 
@@ -12,7 +14,7 @@ These instruction will get you a copy of the project up and running on your loca
 
 ### Requirements
 
-* Install docker
+* Docker
 
 ### Quick Start
 
@@ -23,7 +25,7 @@ $ docker build -t nginx-rtmp .
 
 Create a running container base on the previous image we've just created.
 ```
-$ docker run --rm --name nginx-rtmp -v $(pwd)/mount:/mount -p 8080:80 -p 1935:1935 -d nginx-rtmp
+$ docker run --rm --name nginx-rtmp -v $(pwd)/mount:/mount -p 8080:80 -p 1935:1935 nginx-rtmp
 ```
 
 Or simpy just run the short-cut shell script below
