@@ -1,9 +1,5 @@
 # Adaptive bitrate HTTP Live Streaming (HLS) server
 
-[NM7623 Video Compression Technique, standards and implementation](https://nol.ntu.edu.tw/nol/coursesearch/print_table.php?course_id=944%20U0020&class=&dpt_code=9440&ser_no=79602&semester=109-1) final project.
-
-## About the project
-
 This is a containerize streaming server with Nginx as a reverse proxy.
 
 ![nginx-rtmp](https://github.com/kevinyu0506/NM7623/blob/master/img/nginx-rtmp.png?raw=true)
